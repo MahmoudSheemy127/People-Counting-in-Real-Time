@@ -2,7 +2,7 @@
     "Email_Send": "",
     "Email_Receive": "",
     "Email_Password": "",
-    "url": "",
+    "url": "https://192.168.1.11:8080/video",
     "ALERT": false,
     "Threshold": 10,
     "Thread": false,

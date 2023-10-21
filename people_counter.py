@@ -92,7 +92,9 @@ def people_counter():
 	# the first frame from the video)
 	W = None
 	H = None
-
+	borderY = None
+	borderX1 = None
+	borderX2 = None
 	# instantiate our centroid tracker, then initialize a list to store
 	# each of our dlib correlation trackers, followed by a dictionary to
 	# map each unique object ID to a TrackableObject
@@ -139,6 +141,9 @@ def people_counter():
 		# if the frame dimensions are empty, set them
 		if W is None or H is None:
 			(H, W) = frame.shape[:2]
+			borderY = H // 2
+			borderX1 = 0
+			borderX2 = W
 
 		# if we are supposed to be writing a video to disk, initialize
 		# the writer
@@ -224,7 +229,7 @@ def people_counter():
 		# draw a horizontal line in the center of the frame -- once an
 		# object crosses this line we will determine whether they were
 		# moving 'up' or 'down'
-		cv2.line(frame, (0, H // 2), (W, H // 2), (0, 0, 0), 3)
+		cv2.line(frame, (borderX1, borderY), (borderX2, borderY), (0, 0, 0), 3)
 		cv2.putText(frame, "-Prediction border - Entrance-", (10, H - ((i * 20) + 200)),
 			cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
 
@@ -258,7 +263,7 @@ def people_counter():
 					# if the direction is negative (indicating the object
 					# is moving up) AND the centroid is above the center
 					# line, count the object
-					if direction < 0 and centroid[1] < H // 2:
+					if direction < 0 and centroid[1] < borderY and centroid[0] < borderX2 and centroid[0] > borderX1:
 						totalUp += 1
 						date_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 						move_out.append(totalUp)
@@ -268,7 +273,7 @@ def people_counter():
 					# if the direction is positive (indicating the object
 					# is moving down) AND the centroid is below the
 					# center line, count the object
-					elif direction > 0 and centroid[1] > H // 2:
+					elif direction > 0 and centroid[1] > borderY and centroid[0] < borderX2 and centroid[0] > borderX1:
 						totalDown += 1
 						date_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 						move_in.append(totalDown)
@@ -312,7 +317,7 @@ def people_counter():
 		# display the output
 		for (i, (k, v)) in enumerate(info_status):
 			text = "{}: {}".format(k, v)
-			cv2.putText(frame, text, (10, H - ((i * 20) + 20)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 2)
+			cv2.putText(frame, text, (10, H - ((i * 20) + 20)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
 
 		for (i, (k, v)) in enumerate(info_total):
 			text = "{}: {}".format(k, v)
@@ -328,10 +333,25 @@ def people_counter():
 
 		# show the output frame
 		cv2.imshow("Real-Time Monitoring/Analysis Window", frame)
+	
 		key = cv2.waitKey(1) & 0xFF
 		# if the `q` key was pressed, break from the loop
 		if key == ord("q"):
 			break
+
+		#check if user want to draw a new borderline
+		if key == ord("d"):
+			#draw borderline
+			roi = cv2.selectROI(frame,showCrosshair=False)
+			#check if operation wasnot cancelled
+			if(roi[0] or roi[1] or roi[2] or roi[3]):
+				borderY = roi[1]
+				borderX1 = roi[0]
+				borderX2 = roi[0] + roi[2]
+				# borderWidth = roi[2] - roi[0]
+				print("New boundary: ")
+				print(roi)
+
 		# increment the total number of frames processed thus far and
 		# then update the FPS counter
 		totalFrames += 1
@@ -364,4 +384,6 @@ if config["Scheduler"]:
 	while True:
 		schedule.run_pending()
 else:
+	#setup that border line
+	
 	people_counter()
